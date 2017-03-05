@@ -109,6 +109,7 @@
                             <srcFiles>
                                 <srcFile>src/main/resources/schema-h2.sql</srcFile>
                                 <srcFile>src/main/resources/data-h2.sql</srcFile>
+                                <srcFile>src/main/resources/applause/schema-h2-applausedemo.sql</srcFile>
                             </srcFiles>
                         </configuration>
                     </execution>
