@@ -29,14 +29,14 @@ public class GreetingController {
     DSLContext create;
 
 
-    @GetMapping("/greeting")
+    @GetMapping("/matching")
     public String greetingForm(Model model) {
-        model.addAttribute("greeting", new Greeting());
+        model.addAttribute("matching", new Greeting());
         initDatabase(); // a hack to populate database tables; should skip if already there
         return "greeting";
     }
 
-    @PostMapping("/greeting")
+    @PostMapping("/matching")
     public String greetingSubmit(@ModelAttribute Greeting greeting) {
         greeting.setTester(
                 findTester(greeting.getCountry(), greeting.getDevice())
