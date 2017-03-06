@@ -74,30 +74,11 @@ public class ApplauseDemoTest {
 
     @Test
     public void testMultipleCountriesDevices() throws Exception {
-        Result<BugsRecord> bugs = create.selectFrom(BUGS).fetch();
-        assertEquals(1000, bugs.size());
-
-        Collection<String> selDevices = new ArrayList<>();
-        selDevices.add("Droid DNA");
-        selDevices.add("iPhone 4");
-        selDevices.add("Galaxy S4");
-
-        Collection<String> selCountries = new ArrayList();
-        selCountries.add("GB");
-        selCountries.add("US");
+        Collection<String> selDevices = Lists.newArrayList("Droid DNA", "iPhone 4", "Galaxy S4");
+        Collection<String> selCountries = Lists.newArrayList("GB", "US");
 
         // tester_device left outer join with bugs, count bug_id column in order to sort on it
-        Result<?> result = create
-                .select(count(BUGS.BUG_ID), TESTERS.TESTER_ID, TESTERS.FIRST_NAME, TESTERS.LAST_NAME)
-                .from(TESTER_DEVICE)
-                .join(DEVICES).on(DEVICES.DESCRIPTION.in(selDevices))
-                .join(TESTERS).on(TESTERS.COUNTRY.in(selCountries))
-                .leftOuterJoin(BUGS).on(TESTERS.TESTER_ID.equal(BUGS.TESTER_ID).and(DEVICES.DEVICE_ID.equal(BUGS.DEVICE_ID)))
-                .where(TESTER_DEVICE.TESTER_ID.equal(TESTERS.TESTER_ID).and(TESTER_DEVICE.DEVICE_ID.equal(DEVICES.DEVICE_ID)))
-                .groupBy(TESTERS.TESTER_ID)
-                .orderBy(inline(1).desc())
-                .fetch();
-        System.out.println(result);
+        Result<?> result = privCreate(selDevices, selCountries);
         assertEquals(5, result.size());
 
         // marshall result
@@ -111,5 +92,78 @@ public class ApplauseDemoTest {
         assertEquals(expected, testers);
     }
 
-    //TODO - "All" country use case -- probably faster for both result1 and result2 TESTERS joins to just join on TESTER_ID
+    private Result<?> privCreate(Collection<String> selDevices, Collection<String> selCountries) {
+        // tester_device left outer join with bugs, count bug_id column in order to sort on it
+        Result<?> result = create
+                .select(count(BUGS.BUG_ID), TESTERS.TESTER_ID, TESTERS.FIRST_NAME, TESTERS.LAST_NAME)
+                .from(TESTER_DEVICE)
+                .join(DEVICES).on(DEVICES.DESCRIPTION.in(selDevices))
+                .join(TESTERS).on(TESTERS.COUNTRY.in(selCountries))
+                .leftOuterJoin(BUGS).on(TESTERS.TESTER_ID.equal(BUGS.TESTER_ID).and(DEVICES.DEVICE_ID.equal(BUGS.DEVICE_ID)))
+                .where(TESTER_DEVICE.TESTER_ID.equal(TESTERS.TESTER_ID).and(TESTER_DEVICE.DEVICE_ID.equal(DEVICES.DEVICE_ID)))
+                .groupBy(TESTERS.TESTER_ID)
+                .orderBy(inline(1).desc())
+                .fetch();
+        System.out.println(result);
+        return result;
+    }
+
+    @Test
+    public void testAllCountriesMultipleDevices() throws Exception {
+        Result<?> allCountries = create
+                .selectDistinct(TESTERS.COUNTRY)
+                .from(TESTERS)
+                .fetch();
+        assertEquals(3, allCountries.size());
+
+        Collection<String> selCountries = new ArrayList<>();
+        allCountries.forEach(r -> selCountries.add(r.getValue(TESTERS.COUNTRY)));
+
+        Collection<String> selDevices = Lists.newArrayList("Droid DNA", "iPhone 4", "Galaxy S4");
+
+        Result<?> result = privCreate(selDevices, selCountries);
+        // marshall result
+        List<String> testers = new ArrayList<>();
+        result.forEach(r -> {
+            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
+        });
+
+        assertEquals(8, testers.size());
+        ArrayList<String> expected = Lists.newArrayList("Taybin Rutkin", "Darshini Thiagarajan", "Lucas Lowry", "Mingquan Zheng",
+                "Michael Lubavin", "Sean Wellington", "Miguel Bautista", "Leonard Sutton");
+        assertEquals(expected, testers);
+    }
+
+    @Test
+    public void testAllCountriesAllDevices() throws Exception {
+        Result<?> allDevices = create
+                .selectDistinct(DEVICES.DESCRIPTION)
+                .from(DEVICES)
+                .fetch();
+        assertEquals(10, allDevices.size());
+
+        Result<?> allCountries = create
+                .selectDistinct(TESTERS.COUNTRY)
+                .from(TESTERS)
+                .fetch();
+        assertEquals(3, allCountries.size());
+
+        Collection<String> selDevices = new ArrayList<>();
+        allDevices.forEach(r -> selDevices.add(r.getValue(DEVICES.DESCRIPTION)));
+
+        Collection<String> selCountries = new ArrayList<>();
+        allCountries.forEach(r -> selCountries.add(r.getValue(TESTERS.COUNTRY)));
+
+        Result<?> result = privCreate(selDevices, selCountries);
+        // marshall result
+        List<String> testers = new ArrayList<>();
+        result.forEach(r -> {
+            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
+        });
+
+        assertEquals(9, testers.size());
+        ArrayList<String> expected = Lists.newArrayList("Taybin Rutkin", "Lucas Lowry", "Sean Wellington", "Miguel Bautista",
+                "Stanley Chen", "Mingquan Zheng", "Leonard Sutton", "Darshini Thiagarajan", "Michael Lubavin");
+        assertEquals(expected, testers);
+    }
 }
