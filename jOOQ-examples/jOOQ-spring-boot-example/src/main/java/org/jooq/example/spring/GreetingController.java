@@ -2,23 +2,18 @@ package org.jooq.example.spring;
 
 import org.jooq.DSLContext;
 import org.jooq.Result;
-import org.jooq.example.db.h2.tables.records.BugsRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.thymeleaf.expression.Lists;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.List;
 
 import static org.jooq.example.db.h2.Tables.*;
 import static org.jooq.impl.DSL.count;
@@ -57,41 +52,23 @@ public class GreetingController {
         Collection<String> selCountries = new ArrayList();
         selCountries.add(country);
 
-        Result<?> result1 = create
-                .select(count(), TESTERS.TESTER_ID, TESTERS.FIRST_NAME, TESTERS.LAST_NAME)
-                .from(BUGS)
-                .join(DEVICES).on(DEVICES.DESCRIPTION.in(selDevices))
-                .join(TESTERS).on(TESTERS.COUNTRY.in(selCountries))
-                .where(BUGS.DEVICE_ID.equal(DEVICES.DEVICE_ID).and(BUGS.TESTER_ID.equal(TESTERS.TESTER_ID)))
-                .groupBy(TESTERS.TESTER_ID)
-                .orderBy(inline(1).desc())
-                .fetch();
-        System.out.println(result1);
-
-        // look for tester-device meeting country and device selections
-        //  if not submitted bugs, tester won't be in result1 above
-        Result<?> result2 = create
-                .select(TESTERS.TESTER_ID, TESTERS.FIRST_NAME, TESTERS.LAST_NAME)
+        // tester_device left outer join with bugs, count bug_id column in order to sort on it
+        Result<?> result = create
+                .select(count(BUGS.BUG_ID), TESTERS.TESTER_ID, TESTERS.FIRST_NAME, TESTERS.LAST_NAME)
                 .from(TESTER_DEVICE)
                 .join(DEVICES).on(DEVICES.DESCRIPTION.in(selDevices))
                 .join(TESTERS).on(TESTERS.COUNTRY.in(selCountries))
+                .leftOuterJoin(BUGS).on(TESTERS.TESTER_ID.equal(BUGS.TESTER_ID).and(DEVICES.DEVICE_ID.equal(BUGS.DEVICE_ID)))
                 .where(TESTER_DEVICE.TESTER_ID.equal(TESTERS.TESTER_ID).and(TESTER_DEVICE.DEVICE_ID.equal(DEVICES.DEVICE_ID)))
                 .groupBy(TESTERS.TESTER_ID)
+                .orderBy(inline(1).desc())
                 .fetch();
-        System.out.println(result2);
+        System.out.println(result);
 
-        // marshall answer
-        Set<Integer> seenIds = new HashSet<>();
-        Deque<String> testers = new LinkedList<>();
-        result1.forEach(r -> {
-            seenIds.add(r.getValue(TESTERS.TESTER_ID));
+        // marshall result
+        List<String> testers = new ArrayList<>();
+        result.forEach(r -> {
             testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
-        });
-        // add to end of list the testers who match Country and Device but have no matching bug reports
-        result2.forEach(r -> {
-            if (!seenIds.contains(r.getValue(TESTERS.TESTER_ID))) {
-                testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
-            }
         });
 
         return String.join(", ", testers);
