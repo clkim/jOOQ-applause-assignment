@@ -1,0 +1,38 @@
+<div class="alert alert-danger" ng-show="controller.error">
+    Snap! There was a problem. Please try again with different selection.
+</div>
+
+<h1>Greeting! Welcome to Applause</h1>
+
+<div  ng-show="!showresult">
+    <p>Select your countries and devices</p>
+</div>
+
+<div>
+    <h4>Countries</h4>
+    <div
+        isteven-multi-select
+        input-model="controller.showCountries"
+        output-model="controller.selectedCountries"
+        button-label="icon name"
+        item-label="icon name"
+        tick-property="ticked"
+        output-properties="name"
+    >
+    </div>
+</div>
+<div>
+    <h4>Devices</h4>
+    <!-- TODO multi-selector  -->
+    <ul>Droid DNA</ul>
+    <ul>iPhone 4</ul>
+    <ul>Galaxy S4</ul>
+</div>
+<form role="form" ng-submit="controller.match()">
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<div ng-show="showresult">
+    <h4>Result</h4>
+    <p>The testers are: {{controller.testers}}</p>
+</div>
