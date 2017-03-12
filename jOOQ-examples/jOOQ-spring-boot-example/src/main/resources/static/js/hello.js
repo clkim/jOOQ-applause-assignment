@@ -5,8 +5,8 @@ angular.module('hello', [ 'ngRoute', 'isteven-multi-select' ])
       templateUrl : 'home.html',
       controller : 'home',
       controllerAs: 'controller'
-    }).when('/login', {
-      templateUrl : 'login.html',
+    }).when('/select', {
+      templateUrl : 'select.html',
       controller : 'navigation',
       controllerAs: 'controller'
     }).otherwise('/');
@@ -16,9 +16,6 @@ angular.module('hello', [ 'ngRoute', 'isteven-multi-select' ])
   })
   .controller('home', function($http) {
       var self = this;
-      $http.get('/resource/').then(function(response) {
-        self.greeting = response.data;
-      })
   })
   .controller('navigation', function($rootScope, $http, $location) {
       $rootScope.showresult = false;
@@ -64,13 +61,13 @@ angular.module('hello', [ 'ngRoute', 'isteven-multi-select' ])
       self.match = function() {
         var namesArray = self.selectedCountries.map(function(obj) {return obj['name']});
         doMatch(namesArray.join());
-        $location.path("/login");
+        $location.path("/select");
       };
 
-      // called on clicking logout tab, mimic some action
-      self.logout = function() {
+      // called on clicking clear tab, mimic some action
+      self.clear = function() {
         // just hide the Result section
         $rootScope.showresult = false;
-        $location.path("/login");
+        $location.path("/select");
       }
   });

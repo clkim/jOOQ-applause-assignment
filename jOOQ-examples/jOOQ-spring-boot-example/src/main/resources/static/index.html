@@ -19,8 +19,8 @@
     <div ng-controller="navigation as nav" class="container">
         <ul class="nav nav-pills" role="tablist">
             <li><a href="#/">home</a></li>
-            <li class="active"><a href="#/login">select</a></li>
-            <li ng-show="showresult"><a href="" ng-click="nav.logout()">clear</a></li>
+            <li class="active"><a href="#/select">select</a></li>
+            <li ng-show="showresult"><a href="" ng-click="nav.clear()">clear</a></li>
         </ul>
     </div>
     <div ng-view class="container"></div>
