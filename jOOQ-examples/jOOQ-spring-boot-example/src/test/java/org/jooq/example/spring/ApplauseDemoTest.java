@@ -31,6 +31,8 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest(classes = Application.class)
 //@SpringApplicationConfiguration(classes = Application.class)
 public class ApplauseDemoTest {
+    ArrayList<String> expectedTestersAllCountriesAllDevices = Lists.newArrayList("Taybin Rutkin", "Lucas Lowry", "Sean Wellington",
+            "Miguel Bautista", "Stanley Chen", "Mingquan Zheng", "Leonard Sutton", "Darshini Thiagarajan", "Michael Lubavin");
 
     @Autowired
     DSLContext create;
@@ -83,9 +85,9 @@ public class ApplauseDemoTest {
 
         // marshall result
         List<String> testers = new ArrayList<>();
-        result.forEach(r -> {
-            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
-        });
+        result.forEach(r ->
+            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)))
+        );
 
         assertEquals(5, testers.size());
         ArrayList<String> expected = Lists.newArrayList("Taybin Rutkin", "Darshini Thiagarajan", "Michael Lubavin", "Miguel Bautista", "Leonard Sutton");
@@ -124,9 +126,9 @@ public class ApplauseDemoTest {
         Result<?> result = privCreate(selDevices, selCountries);
         // marshall result
         List<String> testers = new ArrayList<>();
-        result.forEach(r -> {
-            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
-        });
+        result.forEach(r ->
+            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)))
+        );
 
         assertEquals(8, testers.size());
         ArrayList<String> expected = Lists.newArrayList("Taybin Rutkin", "Darshini Thiagarajan", "Lucas Lowry", "Mingquan Zheng",
@@ -157,13 +159,41 @@ public class ApplauseDemoTest {
         Result<?> result = privCreate(selDevices, selCountries);
         // marshall result
         List<String> testers = new ArrayList<>();
-        result.forEach(r -> {
-            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)));
-        });
+        result.forEach(r ->
+            testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)))
+        );
 
         assertEquals(9, testers.size());
-        ArrayList<String> expected = Lists.newArrayList("Taybin Rutkin", "Lucas Lowry", "Sean Wellington", "Miguel Bautista",
-                "Stanley Chen", "Mingquan Zheng", "Leonard Sutton", "Darshini Thiagarajan", "Michael Lubavin");
-        assertEquals(expected, testers);
+        assertEquals(expectedTestersAllCountriesAllDevices, testers);
+
+
+    }
+
+    @Test
+    public void testFasterQueryForAllCountriesAllDevicesSelected() {
+        // if all devices selected, can save doing one join
+        Result<?> result = privFasterAllCountriesAllDevices();
+        // marshall result
+        List<String> testers = new ArrayList<>();
+        result.forEach(r ->
+                testers.add(String.join(" ", r.getValue(TESTERS.FIRST_NAME), r.getValue(TESTERS.LAST_NAME)))
+        );
+        // same result
+        assertEquals(expectedTestersAllCountriesAllDevices, testers);
+    }
+
+    private Result<?> privFasterAllCountriesAllDevices() {
+        // tester_device left outer join with bugs, count bug_id column in order to sort on it
+        // all devices selected, saves one join with devices - NOT needed since we don't need device description
+        Result<?> result = create
+                .select(count(BUGS.BUG_ID), TESTERS.TESTER_ID, TESTERS.FIRST_NAME, TESTERS.LAST_NAME)
+                .from(TESTER_DEVICE)
+                .join(TESTERS).on(TESTER_DEVICE.TESTER_ID.equal(TESTERS.TESTER_ID))
+                .leftOuterJoin(BUGS).on(TESTER_DEVICE.TESTER_ID.equal(BUGS.TESTER_ID).and(TESTER_DEVICE.DEVICE_ID.equal(BUGS.DEVICE_ID)))
+                .groupBy(TESTERS.TESTER_ID)
+                .orderBy(inline(1).desc())
+                .fetch();
+        System.out.println(result);
+        return result;
     }
 }
